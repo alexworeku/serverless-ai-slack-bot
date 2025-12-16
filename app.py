@@ -1,32 +1,41 @@
 import os
+import logging
+import sys
+from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from dotenv import load_dotenv
+
+
+from listeners import register_listeners 
+from utilities import check_required_env_vars, query_createai 
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
-@app.event("app_mention")
-def handle_mention(body,say,logger):
-    print(f"incoming event:\n {body}")
-    # Extract Message
-    event = body['event']
-    message  = event['text']
-    message_ts = event['ts']
+REQUIRED_ENV_VARS = [
+    "SLACK_BOT_TOKEN", 
+    "SLACK_APP_TOKEN", 
     
-    # @TODO Pass Message to CreateAI API
-    # @TODO : Extract API Response & Reply on Slack
-            # Identify Intent
-            # Decide to either reply or loop in Human based on confidence score (returned from API)
-            # Reply to Slack Message
-            # DM Message Details to loopin a human (only if the LLM didn't know how to answer the question)
-            # Include Link to the orginal conversation in the DM
-    # Reply to Message
-    say(
-        text = f"Hey there <@{body['event']['user']}>!",
-        thread_ts = message_ts)
+    "CREATEAI_PROJECT_ID",
+    "CREATEAI_API_URL",
+    "CREATEAI_TOKEN"
+]
 
+missing_vars = check_required_env_vars(REQUIRED_ENV_VARS)
+
+if missing_vars:
+    logger.critical(
+        f"CRITICAL ERROR: Missing environment variables: {', '.join(missing_vars)}"
+    )
+    sys.exit(1)
     
+app = App(token=os.environ["SLACK_BOT_TOKEN"])
+
+register_listeners(app)
+
 if __name__ == "__main__":
-    SocketModeHandler(app,os.environ['SLACK_APP_TOKEN']).start()
-
-
+    logger.info("Starting Slack Bot in Socket Mode...")
+    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
