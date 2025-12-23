@@ -7,35 +7,38 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 
 from listeners import register_listeners 
-from utilities import check_required_env_vars, query_createai 
+from utilities import get_missing_env_vars, query_createai 
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def main():
+    logging.basicConfig(level=logging.INFO)
 
-load_dotenv()
+    load_dotenv()
 
-REQUIRED_ENV_VARS = [
-    "SLACK_BOT_TOKEN", 
-    "SLACK_APP_TOKEN", 
+    REQUIRED_ENV_VARS = [
+        "SLACK_BOT_TOKEN", 
+        "SLACK_APP_TOKEN", 
+        
+        "CREATEAI_PROJECT_ID",
+        "CREATEAI_API_URL",
+        "CREATEAI_TOKEN"
+    ]
+
+    missing_vars = get_missing_env_vars(REQUIRED_ENV_VARS)
+
+    if missing_vars:
+        logger.critical(
+            f"CRITICAL ERROR: Missing environment variables: {', '.join(missing_vars)}"
+        )
+        sys.exit(1)
+        
+    app = App(token=os.environ["SLACK_BOT_TOKEN"])
+    register_listeners(app)
     
-    "CREATEAI_PROJECT_ID",
-    "CREATEAI_API_URL",
-    "CREATEAI_TOKEN"
-]
-
-missing_vars = check_required_env_vars(REQUIRED_ENV_VARS)
-
-if missing_vars:
-    logger.critical(
-        f"CRITICAL ERROR: Missing environment variables: {', '.join(missing_vars)}"
-    )
-    sys.exit(1)
+    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
     
-app = App(token=os.environ["SLACK_BOT_TOKEN"])
-
-register_listeners(app)
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
     logger.info("Starting Slack Bot in Socket Mode...")
-    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+    main()

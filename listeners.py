@@ -19,9 +19,8 @@ def handle_all_messages(message, say, logger, context):
     
     if not user_message:
         return
-
-    # bot_user_id = context.get("bot_user_id")
-    # cleaned_prompt = user_message.replace(f'<@{bot_user_id}>', '').strip()
+    
+    user_message = user_message.replace(f'<@{context.get("bot_user_id")}>', '').strip()
     
     llm_response = query_createai(user_message)
 

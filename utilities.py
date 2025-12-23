@@ -9,7 +9,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def check_required_env_vars(required_vars: List[str]) -> Optional[List[str]]:
+def get_missing_env_vars(required_vars: List[str]) -> Optional[List[str]]:
 
     missing_vars = []
     for var in required_vars:
@@ -19,7 +19,7 @@ def check_required_env_vars(required_vars: List[str]) -> Optional[List[str]]:
     return missing_vars if missing_vars else None
 
 def query_createai(query: str,session_id: Optional[str] = None) -> str | None:
-    CREATEAI_API_URL = os.getenv('CREATEAI_API_URL', 'https://api-main-beta.aiml.asu.edu/query')
+    CREATEAI_API_URL = os.getenv('CREATEAI_API_URL', 'https://api-dev-poc.aiml.asu.edu/query')
     CREATEAI_TOKEN = os.getenv('CREATEAI_TOKEN')
     CREATEAI_PROJECT_ID = os.getenv('CREATEAI_PROJECT_ID')
     MODEL_PROVIDER = os.getenv('MODEL_PROVIDER')
@@ -68,6 +68,8 @@ def query_createai(query: str,session_id: Optional[str] = None) -> str | None:
 
         try:
             response_data: Union[Dict[str, Any], str] = response.json()
+            
+            print(f"CreateAI Response: {response_data}")
         except json.JSONDecodeError:
             return response.text
         
@@ -113,4 +115,3 @@ def query_createai(query: str,session_id: Optional[str] = None) -> str | None:
         
     except requests.exceptions.RequestException as e:
         raise Exception(f'Request setup or network error: {e.__class__.__name__}') from e
-    pass
