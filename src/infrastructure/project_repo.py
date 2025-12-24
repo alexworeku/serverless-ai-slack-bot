@@ -28,6 +28,7 @@ class DynamoProjectRepository(ProjectRepository):
     def __init__(self, dyn_resource, table_name):
         self.table_name = table_name
         self.table = dyn_resource.Table(table_name)
+        super().__init__()
     
     def upsert(self,project: ProjectModel)->bool:
         try:

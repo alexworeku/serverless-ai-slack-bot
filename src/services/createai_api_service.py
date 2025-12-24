@@ -6,7 +6,7 @@ import requests
 logger = logging.logger(__name__)
 
 class CreateAIAPIService:
-    def __init__(self,):
+    def __init__(self):
         pass
     def query(url:str,token:str, proj_id:str, q:str, session_id:Optional[str]=None):
         payload = {
@@ -39,3 +39,4 @@ class CreateAIAPIService:
             # Optional: access detailed error info if raise_for_status was the cause
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Status Code: {e.response.status_code}")
+            raise
