@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import List, Optional
+from typing import List
+from src.models.project_channel_model import ProjectChannel
 from src.models.project_model import ProjectModel
-import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 class ProjectRepository(ABC):
@@ -13,84 +13,186 @@ class ProjectRepository(ABC):
     def get_by_owner(self, owner_email:str)->List[ProjectModel]:
         pass
     @abstractmethod
-    def get_all_by_channel(self, channel_id:str)->List[ProjectModel]:
-        pass
-    @abstractmethod
-    def delete(self, channel_id:str, project_id:str)->bool:
-        pass
-    @abstractmethod
-    def get_all(self)->tuple[List[ProjectModel], str]:
+    def get_projects_by_channel(self, channel_id:str)->List[ProjectModel]:
         pass
     
-logger = logging.get_logger(__name__)
+    @abstractmethod
+    def get_channels_by_project(self, project_id:str)->List[ProjectChannel]:
+        pass
+    
+    @abstractmethod
+    def delete_project(self, project_id:str)->bool:
+        pass
+    @abstractmethod
+    def unlink_projects_from_channels(self, project_channels:List[ProjectChannel])->bool:
+        pass
+    @abstractmethod
+    def link_project_to_channels(self, project_channels:List[ProjectChannel])->bool:
+        pass
+    @abstractmethod
+    def get_all_projects(self,last_evaluated_key:dict=None)->tuple[List[ProjectModel], str]:
+        pass
+    
+logger = logging.getLogger(__name__)
 
 class DynamoProjectRepository(ProjectRepository):
-    def __init__(self, dyn_resource, table_name):
-        self.table_name = table_name
-        self.table = dyn_resource.Table(table_name)
+    def __init__(self, dyn_resource, projects_table_name,project_channel_table_name,proj_ch_index_name):
+        self.dyn_resource = dyn_resource
+        self.projects_table_name = projects_table_name
+        self.project_channel_table_name = project_channel_table_name
+        self.proj_ch_index_name= proj_ch_index_name
+        
+        self.projects_table = dyn_resource.Table(projects_table_name)
+        self.project_channel_table = dyn_resource.Table(project_channel_table_name)
+        
         super().__init__()
     
-    def upsert(self,project: ProjectModel)->bool:
+    def upsert(self,channel_id:str, project: ProjectModel)->bool:
         try:
-            self.table.put_item(Item = project.model_dump(mode='json'))
+            self.projects_table.put_item(Item = project.model_dump(mode='json'))
+            project_channel = ProjectChannel(channel_id=channel_id,project_id=project.project_id)
+            self.project_channel_table.put_item(Item=project_channel.model_dump(mode='json'))
+            
             return True
         except ClientError as e:
-            logger.error("Couldn't add a project to table %s, because of %s:%s", 
-                         self.table_name, 
+            logger.error("Couldn't add a record to table %s, because of %s:%s", 
+                         self.projects_table_name, 
                          e.response['Error']['Code'], 
                          e.response['Error']['Message'])
-            raise
+            return False
             
    
     def get_by_owner(self, owner_email:str)->List[ProjectModel]:
        pass
 
 
-    def get_all_by_channel(self, channel_id:str)->List[ProjectModel]:
+    def get_projects_by_channel(self, channel_id:str)->List[ProjectModel]:
         try:
-            response = self.table.query(
+            channel_projects = self.project_channel_table.query(
                 KeyConditionExpression = Key('channel_id').eq(channel_id)
             )
-            projects=[ProjectModel(**item) for item in response.get('Items',[])]
+            project_keys=[ 
+                          {
+                              "project_id":item['project_id']
+                          }
+                          for item in channel_projects.get('Items',[])]
+            
+
+            result = self.dyn_resource.batch_get_item(
+                RequestItems = {
+                    self.projects_table_name:{
+                        "Keys":project_keys
+                    }
+                }
+            )
+            
+            projects=[]
+            if result.get("UnprocessedKeys",{}):
+                logger.warning("Couldn't fetch some records in a batch: %s", result.get("UnprocessedKeys",{}))
+                
+            if result.get("Responses",{}):
+                projects = result.get("Responses").get(self.projects_table_name,[])
+                
             return projects
             
         except ClientError  as e:
-            logger.error("Couldn't get projects from %s, because of %s:%s", 
-                        self.table_name, 
+            logger.error("Couldn't get records from %s, because of %s:%s", 
+                        self.projects_table_name, 
                         e.response['Error']['Code'], 
                         e.response['Error']['Message'])
-
-    def delete(self, channel_id:str, project_id:str)->bool:
+            return []
+    def get_channels_by_project(self, project_id:str)->List[ProjectChannel]:
+        
         try:
-            self.table.delete_item(
+            result = self.project_channel_table.query(
+                IndexName = self.proj_ch_index_name,
+                KeyConditionExpression = Key('project_id').eq(project_id))
+           
+            proj_channels = []
+            if result.get("Items"):
+                
+                proj_channels = [ProjectChannel(**item) for item in result.get("Items")]
+                
+                return proj_channels
+
+        except ClientError as e:
+            logger.error("Couldn't get records from %s, because of %s:%s", 
+                        self.project_channel_table_name, 
+                        e.response['Error']['Code'], 
+                        e.response['Error']['Message'])
+        
+        
+    def delete_project(self, project_id:str)->bool:
+        try:
+            self.projects_table.delete_item(
                 Key={
-                    'channel_id':channel_id,
                     'project_id':project_id
                 }
             )
             return True
         except ClientError  as e:
-            logger.error("Couldn't delete the project from %s, because of %s:%s", 
-                        self.table_name, 
+            logger.error("Couldn't delete the records from %s, because of %s:%s", 
+                        self.projects_table_name, 
                         e.response['Error']['Code'], 
                         e.response['Error']['Message'])
+            return False
         
- 
-    def get_all(self, last_evaluated_key)->tuple[List[ProjectModel], str]:
+    def unlink_projects_from_channels(self, project_channels:List[ProjectChannel])->bool:
+        
+        try:
+        
+            with self.project_channel_table.batch_writer() as batch:
+                for proj_ch in project_channels:
+                    batch.delete_item(
+                        Key =  {
+                                "project_id": proj_ch.project_id,
+                                "channel_id":proj_ch.channel_id
+                                } 
+                    )
+            return True
+        except ClientError as e:
+            logger.error(
+                "Couldn't delete records from %s: %s:%s",
+                self.project_channel_table_name,
+                e.response['Error']['Code'],
+                e.response['Error']['Message']
+            )
+            return False
+            
+    def link_project_to_channels(self, project_channels:List[ProjectChannel])->bool:
+        try:
+            
+            with self.project_channel_table.batch_writer() as batch:
+                for proj_ch in project_channels:
+                    batch.put_item(
+                    Item = proj_ch.model_dump(mode='json'))
+            
+            
+            return True
+        except ClientError as e:
+            logger.error("Couldn't add records to table %s, because of %s:%s", 
+                            self.projects_table_name, 
+                            e.response['Error']['Code'], 
+                            e.response['Error']['Message'])
+            return False
+
+    
+    def get_all_projects(self, last_evaluated_key:dict=None)->tuple[List[ProjectModel], str]:
         try:
             response = {}
             if last_evaluated_key:
-                response = self.table.scan(ExclusiveStartKey=last_evaluated_key)
+                response = self.projects_table.scan(ExclusiveStartKey=last_evaluated_key)
             else:
-                response = self.table.scan()
-                
+                response = self.projects_table.scan()
+            
             projects=[ProjectModel(**item) for item in response.get('Items',[])]
             
-            return (projects,response['LastEvaluatedKey'])
+            return (projects,response.get("LastEvaluatedKey",""))
             
         except ClientError  as e:
-            logger.error("Couldn't get projects from %s, because of %s:%s", 
-                        self.table_name, 
+            logger.error("Couldn't get records from %s, because of %s:%s", 
+                        self.projects_table_name, 
                         e.response['Error']['Code'], 
                         e.response['Error']['Message'])
+            return ()
         

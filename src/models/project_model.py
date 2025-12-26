@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from enum import  StrEnum,auto
 from pydantic import BaseModel
 
@@ -10,7 +10,7 @@ class ProjectModel(BaseModel):
     created_at:datetime
     updated_at:datetime
     status:ProjectStatus
-    channel_id:str
+    
     
 class ProjectStatus(StrEnum):
     ACTIVE = auto()
