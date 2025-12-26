@@ -42,9 +42,9 @@ class SQSMessageQueue(MessageQueueService):
             )
             
             messages = []
+            print(response)
             for Ind, message in enumerate(response):
                 slack_message = SlackMessageModel(**(json.loads(message.body)))
-                slack_message.sqs_id = Ind
                 slack_message.sqs_receipt_handle = message.receipt_handle
                 
                 messages.append(slack_message)
@@ -56,9 +56,9 @@ class SQSMessageQueue(MessageQueueService):
     def delete_messages(self, receipt_handles: List[str])->bool:
         
         try:
-            entries = [{"Id": str(idx), 'ReceiptHandle':receipt_handle} for idx, receipt_handle in receipt_handles]
+            entries = [{"Id": str(idx), 'ReceiptHandle':receipt_handle} for idx, receipt_handle in enumerate(receipt_handles)]
             
-            response = self.queue.remove_messages(Entries = entries)
+            response = self.queue.delete_messages(Entries = entries)
             if 'Failed' in response:
                 for failure in response['Failed']:
                     # Log the specific ID that failed so you can investigate
