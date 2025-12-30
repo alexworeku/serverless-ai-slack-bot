@@ -1,0 +1,12 @@
+{
+  "body": "{\"token\": \"KL6kIxUGsmlV3gaQh0b0B5zi\", \"team_id\": \"T09TXCWRSAZ\", \"context_team_id\": \"T09TXCWRSAZ\", \"context_enterprise_id\": null, \"api_app_id\": \"A09TUEYFBS7\", \"event\": {\"type\": \"message\", \"user\": \"U09U4QD06JY\", \"ts\": \"1767306043.726759\", \"app_id\": \"A09TUEYFBS7\", \"text\": \"Yes! In the Share section of your project, you can toggle \\\"Arizona State University\\\" general access to allow anyone in that group with the link to view. This lets students with the link access your chatbot if you enable that toggle. You can also copy viewer or editor links to share. \\\\n\\\\nIs there a specific sharing setup you want to configure?\", \"team\": \"T09TXCWRSAZ\", \"bot_profile\": {\"id\": \"B09UE4YTW1F\", \"deleted\": false, \"name\": \"Sparky\", \"updated\": 1763576981, \"app_id\": \"A09TUEYFBS7\", \"user_id\": \"U09U4QD06JY\", \"icons\": {\"image_36\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_36.png\", \"image_48\": \"https://a.slack-edge.com/80588/img/plugins/app/bot_48.png\", \"image_72\": \"https://a.slack-edge.com/80588/img/plugins/app/service_72.png\"}, \"team_id\": \"T09TXCWRSAZ\"}, \"thread_ts\": \"1767306034.057239\", \"parent_user_id\": \"U09UDP8UR3K\", \"blocks\": [{\"type\": \"rich_text\", \"block_id\": \"ArMf+\", \"elements\": [{\"type\": \"rich_text_section\", \"elements\": [{\"type\": \"text\", \"text\": \"Yes! In the Share section of your project, you can toggle \\\"Arizona State University\\\" general access to allow anyone in that group with the link to view. This lets students with the link access your chatbot if you enable that toggle. You can also copy viewer or editor links to share. \\\\n\\\\nIs there a specific sharing setup you want to configure?\"}]}]}], \"channel\": \"C09U4D953M2\", \"event_ts\": \"1767306043.726759\", \"channel_type\": \"channel\"}, \"type\": \"event_callback\", \"event_id\": \"Ev0A6E1TCARG\", \"event_time\": 1767306043, \"authorizations\": [{\"enterprise_id\": null, \"team_id\": \"T09TXCWRSAZ\", \"user_id\": \"U09U4QD06JY\", \"is_bot\": true, \"is_enterprise_install\": false}], \"is_ext_shared_channel\": false, \"event_context\": \"4-eyJldCI6Im1lc3NhZ2UiLCJ0aWQiOiJUMDlUWENXUlNBWiIsImFpZCI6IkEwOVRVRVlGQlM3IiwiY2lkIjoiQzA5VTREOTUzTTIifQ\"}",
+  "resource": "/slack/events",
+  "path": "/slack/events",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Slack-Signature": "dummy-signature",
+    "X-Slack-Request-Timestamp": "1767306043"
+  },
+  "isBase64Encoded": false
+}

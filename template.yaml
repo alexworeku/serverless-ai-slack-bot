@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  slack-bot-connector-serverless
+
+  Sample SAM Template for slack-bot-connector-serverless
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: python3.11
+    Architectures:
+      - arm64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  SlackSigningSecret:
+    Type: String
+    Description: "Signing secret from Slack App API Dashboard"
+    NoEcho: true
+  SlackBotToken:
+    Type: String
+    Description: "Slack Bot token from Slack App API Dashboard"
+    NoEcho: true
+  ProjectChannelIndexName:
+    Type: String
+    Default: "ProjectChannelIndex"
+
+Resources:
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: SharedProjectCode
+      Description: Shared models, services, and infrastructure
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - python3.11
+    Metadata:
+      BuildMethod: python3.11
+  WorkerQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "SlackMessageQueue"
+      VisibilityTimeout: 70 # seconds
+      MessageRetentionPeriod: 86400 #  1 day
+
+  ProjectTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Projects
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+
+  ProjectChannelTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ProjectChannel
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: channel_id
+          AttributeType: S
+        - AttributeName: project_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: channel_id
+          KeyType: HASH
+        - AttributeName: project_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: !Ref ProjectChannelIndexName
+          KeySchema:
+            - AttributeName: project_id
+              KeyType: HASH
+            - AttributeName: channel_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
+
+  SlackMessageListenerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 10
+      CodeUri: functions/message-listener/
+      Handler: app.handle_slack_message
+      Environment:
+        Variables:
+          SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
+          QUEUE_URL: !Ref WorkerQueue
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt WorkerQueue.QueueName
+      Events:
+        SlackWebhook:
+          Type: HttpApi
+          Properties:
+            Path: /slack-event
+            Method: POST
+  SlackMessageProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      CodeUri: functions/message-processor/
+      Handler: app.process_messages
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProjectTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProjectChannelTable
+      Environment:
+        Variables:
+          PROJ_TABLE_NAME: !Ref ProjectTable
+          PROJCHANNEL_TABLE_NAME: !Ref ProjectChannelTable
+          PROJCHANNEL_GSI_NAME: !Ref ProjectChannelIndexName
+      Events:
+        SlackMessageProcessor:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt WorkerQueue.Arn
+
+Outputs:
+  SlackApiUri:
+    Description: "Copy URL for Slack API Subscription"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/slack-event"

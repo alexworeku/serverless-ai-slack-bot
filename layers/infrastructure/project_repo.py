@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import logging
 from typing import List
-from src.models.project_channel_model import ProjectChannel
-from src.models.project_model import ProjectModel
+from models.project_channel_model import ProjectChannel
+from models.project_model import ProjectModel
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 class ProjectRepository(ABC):
@@ -68,39 +68,43 @@ class DynamoProjectRepository(ProjectRepository):
 
     def get_projects_by_channel(self, channel_id:str)->List[ProjectModel]:
         try:
-            channel_projects = self.project_channel_table.query(
-                KeyConditionExpression = Key('channel_id').eq(channel_id)
-            )
-            project_keys=[ 
-                          {
-                              "project_id":item['project_id']
-                          }
-                          for item in channel_projects.get('Items',[])]
-            
 
+            response = self.project_channel_table.query(
+                KeyConditionExpression=Key('channel_id').eq(channel_id)
+            )
+            
+            items = response.get('Items', [])
+            logger.info(f"Found {len(items)} project mappings for channel {channel_id}")
+
+      
+            project_keys = [{"project_id": item['project_id']} for item in items]
+
+         
+            if not project_keys:
+                return []
+
+          
             result = self.dyn_resource.batch_get_item(
-                RequestItems = {
-                    self.projects_table_name:{
-                        "Keys":project_keys
+                RequestItems={
+                    self.projects_table_name: {
+                        "Keys": project_keys
                     }
                 }
             )
+
+    
+            if result.get("UnprocessedKeys", {}):
+                logger.warning(f"Unprocessed keys remaining: {result['UnprocessedKeys']}")
+
+
+            raw_projects = result.get("Responses", {}).get(self.projects_table_name, [])
             
-            projects=[]
-            if result.get("UnprocessedKeys",{}):
-                logger.warning("Couldn't fetch some records in a batch: %s", result.get("UnprocessedKeys",{}))
-                
-            if result.get("Responses",{}):
-                projects = result.get("Responses").get(self.projects_table_name,[])
-                
-            return projects
-            
-        except ClientError  as e:
-            logger.error("Couldn't get records from %s, because of %s:%s", 
-                        self.projects_table_name, 
-                        e.response['Error']['Code'], 
-                        e.response['Error']['Message'])
+            return [ProjectModel(**p) for p in raw_projects]
+
+        except ClientError as e:
+            logger.error(f"DynamoDB Error: {e.response['Error']['Message']}")
             return []
+        
     def get_channels_by_project(self, project_id:str)->List[ProjectChannel]:
         
         try:

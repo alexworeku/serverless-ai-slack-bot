@@ -1,7 +1,10 @@
 from datetime import datetime
 from enum import  StrEnum,auto
 from pydantic import BaseModel
-
+class ProjectStatus(StrEnum):
+    ACTIVE = auto()
+    INACTIVE = auto()
+    
 class ProjectModel(BaseModel):
     project_id:str
     api_token:str
@@ -12,6 +15,3 @@ class ProjectModel(BaseModel):
     status:ProjectStatus
     
     
-class ProjectStatus(StrEnum):
-    ACTIVE = auto()
-    INACTIVE = auto()

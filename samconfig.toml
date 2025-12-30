@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "create-ai-slack-connector"
+resolve_s3 = true
+s3_prefix = "create-ai-slack-connector"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+parameter_overrides = "ProjectChannelIndexName=\"ProjectChannelIndex\""
+
+[default.global.parameters]
+region = "us-east-1"

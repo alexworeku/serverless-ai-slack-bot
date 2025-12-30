@@ -1,0 +1,4 @@
+boto3
+requests
+slack_bolt
+pydantic

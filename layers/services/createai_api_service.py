@@ -4,12 +4,12 @@ from typing import Optional
 
 import requests
 
-logger = logging.logger(__name__)
+logger = logging.getLogger(__name__)
 
 class CreateAIAPIService:
     def __init__(self):
         pass
-    def query(url:str,token:str, proj_id:str, q:str, session_id:Optional[str]=None):
+    def query(self, url:str,token:str, proj_id:str, q:str, session_id:Optional[str]=None):
         payload = {
         'action': 'query',
         'query': q,
