@@ -41,3 +41,22 @@ class CreateAIAPIService:
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Status Code: {e.response.status_code}")
             raise
+    def get_decorated_prompt(self, message_text:str)->str:
+        return f"""
+                You are an assistant that answers questions from Slack messages.
+                Your task:
+                - Answer the Slack message clearly and concisely.
+                - If you cannot provide a clear and confident answer, or if the response would  include uncertainty or refusal (for example: "I don't know", "I'm not sure",  "I can't answer this", or similar), then set answered to false.
+                - If you provide a meaningful, direct answer, set answered to true.
+                
+                Output rules:
+                - Respond ONLY with valid JSON.
+                - Do not include any extra text.
+                - Follow this exact schema:{{  "answer": string,  "answered": boolean}}
+                
+                --- SLACK MESSAGE START ---
+                {message_text}
+                
+                --- SLACK MESSAGE END ---
+
+             """

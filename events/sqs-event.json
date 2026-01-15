@@ -4,7 +4,7 @@
       "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
       "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
 
-      "body": "{\"user\":\"U012ABC345\",\"text\":\"Hello bot, how are you?\",\"ts\":\"1620000000.000100\",\"channel\":\"C012ABC345\"}",
+      "body": "{\"user\":\"U012ABC345\",\"text\":\"Hello bot, how are you?\",\"ts\":\"1767306043.726759\",\"channel\":\"C09U4D953M2\"}",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1545082649183",
