@@ -124,8 +124,45 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt WorkerQueue.Arn
+  ProjectCrudFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/project-crud/
+      Handler: app.handler
+      Timeout: 15
+      Layers:
+        - !Ref SharedLayer
+      Environment:
+        Variables:
+          PROJ_TABLE_NAME: !Ref ProjectTable
+          PROJCHANNEL_TABLE_NAME: !Ref ProjectChannelTable
+          PROJCHANNEL_GSI_NAME: !Ref ProjectChannelIndexName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectChannelTable
+      Events:
+        ApiGatewayCrud:
+          Type: HttpApi
+          Properties:
+            Path: /projects
+            Method: ANY
+        ApiGatewayProjectsChannels:
+          Type: HttpApi
+          Properties:
+            Path: /projects/{project_id}/channels
+            Method: ANY
+        ApiGatewayProjectDelete:
+          Type: HttpApi
+          Properties:
+            Path: /projects/{project_id}
+            Method: DELETE
 
 Outputs:
   SlackApiUri:
     Description: "Copy URL for Slack API Subscription"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/slack-event"
+  ProjectCrudApiBaseUrl:
+    Description: "Base URL for Project CRUD API"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

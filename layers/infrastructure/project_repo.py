@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 from typing import List
-from models.project_channel_model import ProjectChannel
+from models.project_channel_model import ProjectChannelModel
 from models.project_model import ProjectModel
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
@@ -17,17 +17,17 @@ class ProjectRepository(ABC):
         pass
     
     @abstractmethod
-    def get_channels_by_project(self, project_id:str)->List[ProjectChannel]:
+    def get_channels_by_project(self, project_id:str)->List[ProjectChannelModel]:
         pass
     
     @abstractmethod
     def delete_project(self, project_id:str)->bool:
         pass
     @abstractmethod
-    def unlink_projects_from_channels(self, project_channels:List[ProjectChannel])->bool:
+    def unlink_projects_from_channels(self, project_channels:List[ProjectChannelModel])->bool:
         pass
     @abstractmethod
-    def link_project_to_channels(self, project_channels:List[ProjectChannel])->bool:
+    def link_project_to_channels(self, project_channels:List[ProjectChannelModel])->bool:
         pass
     @abstractmethod
     def get_all_projects(self,last_evaluated_key:dict=None)->tuple[List[ProjectModel], str]:
@@ -50,7 +50,7 @@ class DynamoProjectRepository(ProjectRepository):
     def upsert(self,channel_id:str, project: ProjectModel)->bool:
         try:
             self.projects_table.put_item(Item = project.model_dump(mode='json'))
-            project_channel = ProjectChannel(channel_id=channel_id,project_id=project.project_id)
+            project_channel = ProjectChannelModel(channel_id=channel_id,project_id=project.project_id)
             self.project_channel_table.put_item(Item=project_channel.model_dump(mode='json'))
             
             return True
@@ -105,7 +105,7 @@ class DynamoProjectRepository(ProjectRepository):
             logger.error(f"DynamoDB Error: {e.response['Error']['Message']}")
             return []
         
-    def get_channels_by_project(self, project_id:str)->List[ProjectChannel]:
+    def get_channels_by_project(self, project_id:str)->List[ProjectChannelModel]:
         
         try:
             result = self.project_channel_table.query(
@@ -115,7 +115,7 @@ class DynamoProjectRepository(ProjectRepository):
             proj_channels = []
             if result.get("Items"):
                 
-                proj_channels = [ProjectChannel(**item) for item in result.get("Items")]
+                proj_channels = [ProjectChannelModel(**item) for item in result.get("Items")]
                 
                 return proj_channels
 
@@ -141,7 +141,7 @@ class DynamoProjectRepository(ProjectRepository):
                         e.response['Error']['Message'])
             return False
         
-    def unlink_projects_from_channels(self, project_channels:List[ProjectChannel])->bool:
+    def unlink_projects_from_channels(self, project_channels:List[ProjectChannelModel])->bool:
         
         try:
         
@@ -163,7 +163,7 @@ class DynamoProjectRepository(ProjectRepository):
             )
             return False
             
-    def link_project_to_channels(self, project_channels:List[ProjectChannel])->bool:
+    def link_project_to_channels(self, project_channels:List[ProjectChannelModel])->bool:
         try:
             
             with self.project_channel_table.batch_writer() as batch:
