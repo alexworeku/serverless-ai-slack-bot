@@ -53,7 +53,7 @@ def process_messages(data,context):
                 custom_message = createAI_API.get_decorated_prompt(record_dict.get('text'))
                 
                 llm_response = createAI_API.query(project.api_url, project.api_token, project.project_id, custom_message)
-                logger.info(f"Custom message {custom_message}\nLLM Response: {llm_response}")
+                logger.info(f"Custom message {custom_message}")
                
                 
                 if llm_response.get("answered") is True:
@@ -63,6 +63,8 @@ def process_messages(data,context):
                         llm_response['answer']
                     )
                     logger.info(f'Slack Reply Response {slack_response}')
+                else:
+                    logger.info(f"CreateAI API response ignored: {llm_response}")
         except Exception as e:
             logger.error("Failed to process message: %s",e)
             # raise e

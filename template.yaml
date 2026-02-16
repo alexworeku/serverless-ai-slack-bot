@@ -116,6 +116,7 @@ Resources:
             TableName: !Ref ProjectChannelTable
       Environment:
         Variables:
+          SLACK_BOT_TOKEN: ""
           PROJ_TABLE_NAME: !Ref ProjectTable
           PROJCHANNEL_TABLE_NAME: !Ref ProjectChannelTable
           PROJCHANNEL_GSI_NAME: !Ref ProjectChannelIndexName
