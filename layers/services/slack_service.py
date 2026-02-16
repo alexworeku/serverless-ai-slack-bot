@@ -10,10 +10,19 @@ class SlackService:
         try:
             response = self.client.chat_postMessage(
                 channel=channel_id,
-                thread_ts=thread_ts, 
+                thread_ts=str(thread_ts), 
                 text=text
             )
             return response
         except SlackApiError as e:
-            print(f"Error posting to Slack: {e.response['error']}")
+            error_code = e.response['error']
+            print(f"!!! SLACK API ERROR: {error_code} !!!")
+            
+            if error_code == 'not_in_channel':
+                print("-> Fix: Type /invite @YourBotName in the channel")
+            elif error_code == 'missing_scope':
+                print("-> Fix: Reinstall the app in the Slack Dashboard")
+            elif error_code == 'invalid_auth':
+                print("-> Fix: Your token is wrong or expired")
+                
             return None

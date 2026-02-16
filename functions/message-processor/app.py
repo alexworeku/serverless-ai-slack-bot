@@ -44,7 +44,8 @@ def process_messages(data,context):
             # Get API Credentials
             projects = project_repo.get_projects_by_channel(channel_id=record_dict.get('channel'))
            
-            logging.info(f"{len(projects)} Projects Loaded")
+            logging.info(f"{len(projects)} Projects Loaded: {projects}")
+            
             
             if projects:
 
@@ -52,20 +53,14 @@ def process_messages(data,context):
                 custom_message = createAI_API.get_decorated_prompt(record_dict.get('text'))
                 
                 llm_response = createAI_API.query(project.api_url, project.api_token, project.project_id, custom_message)
+                logger.info(f"Custom message {custom_message}\nLLM Response: {llm_response}")
+               
                 
-                if llm_response.status_code != 200:
-                    logger.error(f"LLM API Error: {llm_response.status_code} - {llm_response.text}")
-                    continue
-            
-                llm_response = llm_response.json()
-                
-                parsed_llm_response = json.loads(llm_response.get('response'))
-                
-                if parsed_llm_response.get("answered") is True:
+                if llm_response.get("answered") is True:
                     slack_response = slack_service.reply_to_thread(
                         record_dict.get('channel'),
                         record_dict.get('ts'),
-                        parsed_llm_response['answer']
+                        llm_response['answer']
                     )
                     logger.info(f'Slack Reply Response {slack_response}')
         except Exception as e:

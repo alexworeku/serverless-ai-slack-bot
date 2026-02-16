@@ -34,7 +34,9 @@ class CreateAIAPIService:
                 timeout=30
             )
             response.raise_for_status()
-            return response
+            data=response.json()
+            logger.info(f"LLM Response Parsed(/query):\n {data}")
+            return data
         except Exception as e:
             logger.error(f"Request failed: {e}")
             # Optional: access detailed error info if raise_for_status was the cause
