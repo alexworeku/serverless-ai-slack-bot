@@ -1,6 +1,6 @@
 # AI Slack Connector
 
-A serverless Slack bot connector that integrates with CreateAI API to provide intelligent responses to Slack messages. Built with AWS SAM (Serverless Application Model) using Python 3.11 and deployed on AWS Lambda.
+A serverless Slack bot connector that integrates with LLM API to provide intelligent responses to Slack messages. Built with AWS SAM (Serverless Application Model) using Python 3.11 and deployed on AWS Lambda.
 
 ## Architecture
 
@@ -19,12 +19,12 @@ This application uses a serverless architecture with the following components:
 ### Function Flow
 1. Slack sends webhook events to the API Gateway endpoint
 2. `SlackMessageListenerFunction` validates the request and forwards messages to SQS
-3. `SlackMessageProcessorFunction` consumes messages from SQS, queries the CreateAI API, and responds in Slack
+3. `SlackMessageProcessorFunction` consumes messages from SQS, queries the LLM API, and responds in Slack
 
 ## Features
 
 - **Slack Integration**: Receives and responds to Slack messages in real-time
-- **AI-Powered Responses**: Integrates with CreateAI API for intelligent responses
+- **AI-Powered Responses**: Integrates with LLM API for intelligent responses
 - **Project Management**: Supports multiple projects with channel-based routing
 - **Secure Authentication**: Slack signature verification and secure credential storage
 - **Asynchronous Processing**: Uses SQS for reliable message processing
@@ -45,7 +45,7 @@ This application uses a serverless architecture with the following components:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd create-ai-slack-connector
+   cd serverless-ai-slack-bot
    ```
 
 2. **Set up Python virtual environment**
@@ -128,7 +128,7 @@ Map Slack channels to projects in the `ProjectChannel` table:
 ### Testing Functions
 ```bash
 # Test message listener
-sam local invoke SlackMessageListenerFunction -e events/message-event.json
+sam local invoke SlackMessageListenerFunction -e events/slack-event.json
 
 # Test message processor  
 sam local invoke SlackMessageProcessorFunction -e events/sqs-event.json
