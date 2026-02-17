@@ -6,6 +6,7 @@ A serverless Slack bot connector that integrates with LLM API to provide intelli
 
 This application uses a serverless architecture with the following components:
 
+![Architecture](https://drive.google.com/uc?export=view&id=18dqhPl0Z4uRtF_WLT3K4ClHYl3g4LKDX)
 ### AWS Resources
 - **API Gateway**: HTTP endpoint for Slack webhook events
 - **Lambda Functions**: 
